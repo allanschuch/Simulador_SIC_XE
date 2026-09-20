@@ -32,26 +32,27 @@ public class Memory {
      * Lê um único byte (8 bits) do endereço especificado.
      * 
      * @param address O endereço de memória (0 a 1.048.575).
-     * @return O valor do byte lido como um inteiro sem sinal (0 a 255).
+     * @return O valor do byte lido tratado como um inteiro sem sinal (0 a 255).
      * @throws IllegalArgumentException se o endereço estiver fora dos limites da memória.
      */
     public int readByte(int address) {
         validateAddress(address);
-        // Aplica a máscara 0xFF para garantir que o byte retornado seja tratado 
-        // como valor sem sinal (unsigned) no Java.
-        return data[address] & 0xFF; 
+        // Utiliza a máscara para que o Java trate o byte lido como um inteiro sem sinal,
+        // evitando problemas de extensão de sinal negativo.
+        return data[address] & Word24.UNSIGNED_BYTE_MASK; 
     }
 
     /**
      * Escreve um único byte (8 bits) no endereço especificado.
      * 
      * @param address O endereço de memória (0 a 1.048.575).
-     * @param value O valor a ser escrito (será truncado para 8 bits).
+     * @param value O valor a ser escrito.
      * @throws IllegalArgumentException se o endereço estiver fora dos limites da memória.
      */
     public void writeByte(int address, int value) {
         validateAddress(address);
-        data[address] = (byte) (value & 0xFF);
+        // A máscara garante que apenas os 8 bits menos significativos sejam gravados.
+        data[address] = (byte) (value & Word24.UNSIGNED_BYTE_MASK);
     }
 
     /**
@@ -62,26 +63,24 @@ public class Memory {
      * @return Uma instância de Word24 contendo o valor lido.
      */
     public Word24 readWord(int address) {
-        int b1 = readByte(address);       // Byte mais significativo (Big-Endian)
-        int b2 = readByte(address + 1);
-        int b3 = readByte(address + 2);   // Byte menos significativo
-
-        int combined = (b1 << 16) | (b2 << 8) | b3;
-        return new Word24(combined);
+        return new Word24(
+            readByte(address),      // Byte mais significativo (High)
+            readByte(address + 1),  // Byte intermediário (Middle)
+            readByte(address + 2)   // Byte menos significativo (Low)
+        );
     }
 
     /**
      * Escreve uma palavra de 24 bits (3 bytes) a partir do endereço especificado.
+     * Desmembra a palavra utilizando as funções de abstração da Word24.
      * 
      * @param address O endereço inicial da memória.
      * @param word A instância de Word24 a ser armazenada.
      */
     public void writeWord(int address, Word24 word) {
-        int value = word.toIntUnsigned();
-        
-        writeByte(address, (value >> 16) & 0xFF);     // Isola e escreve os 8 bits superiores
-        writeByte(address + 1, (value >> 8) & 0xFF);  // Isola e escreve os 8 bits do meio
-        writeByte(address + 2, value & 0xFF);         // Isola e escreve os 8 bits inferiores
+        writeByte(address, word.getHighByte());
+        writeByte(address + 1, word.getMiddleByte());
+        writeByte(address + 2, word.getLowByte());
     }
 
     /**
