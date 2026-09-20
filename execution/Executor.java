@@ -4,6 +4,7 @@ import decoder.DecodedInstruction;
 import hardware.Memory;
 import hardware.RegisterBank;
 import types.AddressingMode;
+import types.ConditionCode;
 import types.Opcode;
 import types.Register;
 import types.Word24;
@@ -89,28 +90,48 @@ public class Executor {
                 break;
 
             // ==========================================
+            // 5. FLUXO DE CONTROLE E COMPARAÇÃO
+            // ==========================================
+            case COMP:
+                executeCompare(inst, targetAddress);
+                break;
+            case COMPR:
+                executeRegisterCompare(inst.getR1(), inst.getR2());
+                break;
+            case J:
+                registers.setPC(targetAddress);
+                break;
+            case JEQ:
+                if (registers.getConditionCode() == ConditionCode.EQUAL) registers.setPC(targetAddress);
+                break;
+            case JGT:
+                if (registers.getConditionCode() == ConditionCode.GREATER_THAN) registers.setPC(targetAddress);
+                break;
+            case JLT:
+                if (registers.getConditionCode() == ConditionCode.LESS_THAN) registers.setPC(targetAddress);
+                break;
+            case JSUB:
+                registers.set(Register.L, registers.get(Register.PC)); // Salva o endereço de retorno no L
+                registers.setPC(targetAddress); // Salta para a subrotina
+                break;
+            case RSUB:
+                registers.set(Register.PC, registers.get(Register.L)); // Restaura o PC a partir do L
+                break;
+
+            // ==========================================
             // INSTRUÇÕES PENDENTES (Próxima Iteração)
             // ==========================================
             case LDCH:
             case STCH:
-            case COMP:
-            case COMPR:
             case AND:
             case OR:
             case TIX:
             case TIXR:
             case SHIFTL:
             case SHIFTR:
-            case J:
-            case JEQ:
-            case JGT:
-            case JLT:
-            case JSUB:
-            case RSUB:
                 throw new UnsupportedOperationException("Instrução mapeada, mas ainda não implementada no Executor: " + op);
                 
             default:
-                // Mecanismo de segurança extra, embora o enum Opcode já filtre flutuantes e I/O.
                 throw new IllegalArgumentException("Opcode não suportado para execução: " + op);
         }
     }
@@ -163,6 +184,42 @@ public class Executor {
         Word24 val2 = registers.get(r2);
         Word24 result = computeArithmetic(op, val2, val1); // A instrução é r2 <- r2 (op) r1
         registers.set(r2, result);
+    }
+
+    /**
+     * Compara o valor do Acumulador (A) com um valor da memória (ou imediato) 
+     * e atualiza o Código de Condição (CC).
+     */
+    private void executeCompare(DecodedInstruction inst, int targetAddress) {
+        Word24 valA = registers.get(Register.A);
+        Word24 operand = fetchOperand(inst, targetAddress);
+        updateConditionCode(valA, operand);
+    }
+
+    /**
+     * Compara o valor de dois registradores e atualiza o Código de Condição (CC).
+     */
+    private void executeRegisterCompare(Register r1, Register r2) {
+        Word24 val1 = registers.get(r1);
+        Word24 val2 = registers.get(r2);
+        updateConditionCode(val1, val2);
+    }
+
+    /**
+     * Lógica central de comparação com sinal (complemento de 2).
+     * Define o estado (LESS_THAN, EQUAL, GREATER_THAN) para uso futuro por saltos condicionais[cite: 3, 4].
+     */
+    private void updateConditionCode(Word24 op1, Word24 op2) {
+        int v1 = op1.toIntSigned();
+        int v2 = op2.toIntSigned();
+
+        if (v1 < v2) {
+            registers.setConditionCode(ConditionCode.LESS_THAN);
+        } else if (v1 > v2) {
+            registers.setConditionCode(ConditionCode.GREATER_THAN);
+        } else {
+            registers.setConditionCode(ConditionCode.EQUAL);
+        }
     }
 
     /**
