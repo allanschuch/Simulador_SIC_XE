@@ -10,6 +10,14 @@ public class Word24 {
     /** Máscara constante para garantir que apenas os 24 bits menos significativos sejam mantidos. */
     public static final int MAX_MASK = 0xFFFFFF; 
 
+    /**
+     * Máscara utilizada para anular a extensão de sinal automática do Java em operações com bytes.
+     * Como o Java não possui tipos primitivos sem sinal (unsigned), um byte com o bit mais significativo
+     * ativo é interpretado como um número negativo. Ao aplicarmos esta máscara (& 0xFF), 
+     * forçamos o Java a tratar o valor estritamente como um inteiro sem sinal, variando de 0 a 255.
+     */
+    public static final int UNSIGNED_BYTE_MASK = 0xFF;
+
     // O valor interno é sempre mantido mascarado aos limites de 24 bits.
     private final int value;
 
@@ -21,6 +29,22 @@ public class Word24 {
      */
     public Word24(int value) {
         this.value = value & MAX_MASK;
+    }
+
+    /**
+     * Construtor que monta uma palavra de 24 bits a partir de 3 bytes independentes.
+     * Assume a arquitetura Big-Endian, onde o primeiro byte é o mais significativo.
+     * A constante UNSIGNED_BYTE_MASK garante que o Java trate os bytes como inteiros sem sinal,
+     * impedindo a propagação de bits negativos durante o deslocamento (shift).
+     *
+     * @param highByte   O byte mais significativo (bits 16 a 23).
+     * @param middleByte O byte intermediário (bits 8 a 15).
+     * @param lowByte    O byte menos significativo (bits 0 a 7).
+     */
+    public Word24(int highByte, int middleByte, int lowByte) {
+        this.value = ((highByte & UNSIGNED_BYTE_MASK) << 16) | 
+                     ((middleByte & UNSIGNED_BYTE_MASK) << 8) | 
+                     (lowByte & UNSIGNED_BYTE_MASK);
     }
 
     /**
@@ -49,6 +73,33 @@ public class Word24 {
             return value | 0xFF000000; // Estende o sinal preenchendo os 8 bits mais altos do int Java com 1
         }
         return value;
+    }
+
+    /**
+     * Extrai o byte mais significativo (High Byte) desta palavra de 24 bits.
+     * 
+     * @return Um inteiro sem sinal (0 a 255) correspondente aos 8 bits mais altos.
+     */
+    public int getHighByte() {
+        return (value >> 16) & UNSIGNED_BYTE_MASK;
+    }
+
+    /**
+     * Extrai o byte intermediário (Middle Byte) desta palavra de 24 bits.
+     * 
+     * @return Um inteiro sem sinal (0 a 255) correspondente aos 8 bits centrais.
+     */
+    public int getMiddleByte() {
+        return (value >> 8) & UNSIGNED_BYTE_MASK;
+    }
+
+    /**
+     * Extrai o byte menos significativo (Low Byte) desta palavra de 24 bits.
+     * 
+     * @return Um inteiro sem sinal (0 a 255) correspondente aos 8 bits mais baixos.
+     */
+    public int getLowByte() {
+        return value & UNSIGNED_BYTE_MASK;
     }
 
     /**
