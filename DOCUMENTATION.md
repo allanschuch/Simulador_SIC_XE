@@ -19,6 +19,7 @@ O sistema implementa o padrão MVC. A Máquina Virtual (Modelo) expõe o estado 
   * 2.2. Classe `RegisterBank`
 * **3. Pacote `decoder`: Decodificação de Instruções**
   * 3.1. Classe `DecodedInstruction`
+  * 3.2. Classe `InstructionDecoder`
 
 ---
 
@@ -84,3 +85,12 @@ Atua como um contêiner de dados (DTO) imutável que centraliza as propriedades 
 
 *   **Separação de Formatos:** Possui construtores distintos para acomodar a discrepância estrutural entre instruções. O construtor de Formato 2 inicializa exclusivamente os parâmetros de registradores (`r1` e `r2`). O construtor de Formatos 3 e 4 inicializa o modo de endereçamento, as flags de cálculo de endereço (`x`, `b`, `p`, `e`) e o valor de deslocamento/endereço, definindo os parâmetros do Formato 2 como nulos.
 *   **Facilitador de Álgebra Relativa:** O método `getSignedDisplacement()` acessa o valor cru de deslocamento extraído (12 bits) e o retorna encapsulado através de `Word24.fromSigned12Bit()`. Isso entrega para a unidade de controle o valor pronto com o sinal estendido, essencial para a adição aritmética correta no endereçamento relativo ao PC.
+
+### 3.2. Classe `InstructionDecoder`
+Responsável pela leitura crua da memória e extração estruturada das flags lógicas e operandos, delegando o resultado para a instanciação de um objeto `DecodedInstruction`.
+
+*   **Decodificação de Formato 2:** Para instruções de 2 bytes, a classe lê o segundo byte da memória e aplica operações de deslocamento de bits (`>>`) aliadas à constante `DISPLACEMENT_HIGH_NIBBLE_MASK` (`0x0F`) para extrair e mapear isoladamente os nibbles (4 bits) correspondentes aos registradores `r1` e `r2`.
+*   **Extração de Flags (Formatos 3 e 4):** A identificação das diretrizes de endereçamento é feita via máscaras bit a bit (`&`). A classe extrai as flags `n` e `i` a partir dos dois bits menos significativos do primeiro byte (`FLAG_N_MASK`, `FLAG_I_MASK`), e as flags `x`, `b`, `p` e `e` a partir dos quatro bits mais significativos do segundo byte lido.
+*   **Concatenação de Endereços/Deslocamentos:**
+    *   **Formato 4:** Ativado quando a flag `e` é verdadeira. O decodificador consome 4 bytes da memória e concatena os 4 bits inferiores do segundo byte com os 16 bits dos bytes três e quatro. Este processo utiliza deslocamentos lógicos (`<<`) e operadores OR (`|`), resultando no endereço absoluto de 20 bits.
+    *   **Formato 3:** Ativado quando a flag `e` é falsa. O decodificador consome 3 bytes e forma o deslocamento relativo de 12 bits combinando o nibble inferior do byte dois e a totalidade do byte três.
