@@ -7,11 +7,11 @@ import java.util.EnumMap;
 
 /**
  * Representa o Banco de Registradores do processador SIC/XE.
- * O roteiro estabelece 7 registradores de 24 bits (A, X, L, B, S, T, SW) 
+ * São 7 registradores de 24 bits (A, X, L, B, S, T, SW) 
  * e o Contador de Instruções (PC) de 24 bits.
  * 
  * O registrador de Ponto Flutuante (F) possui 48 bits na especificação, 
- * mas, por delimitação didática do projeto, não será simulado.
+ * mas, por delimitação do projeto, não será simulado.
  */
 public class RegisterBank {
     
@@ -19,8 +19,8 @@ public class RegisterBank {
     
     /**
      * Representação de alto nível do Código Condicional (CC).
-     * No hardware real, o CC ocupa bits específicos dentro da Palavra de Status (SW)[cite: 2].
-     * Aqui, utilizamos uma abstração orientada a objetos para máxima clareza didática.
+     * No hardware real, o CC ocupa bits específicos dentro da Palavra de Status (SW).
+     * Aqui, utilizamos uma abstração.
      */
     private ConditionCode currentConditionCode;
 
@@ -65,7 +65,6 @@ public class RegisterBank {
 
     /**
      * Retorna o endereço armazenado no Contador de Instruções (PC).
-     * Método utilitário criado devido à alta frequência de acesso ao PC durante o ciclo de Fetch.
      * 
      * @return O valor inteiro (sem sinal) do PC.
      */
@@ -83,7 +82,7 @@ public class RegisterBank {
     }
 
     /**
-     * Atualiza o Código de Condição após operações de comparação (COMP, COMPR)[cite: 1, 2].
+     * Atualiza o Código de Condição após operações de comparação (COMP, COMPR).
      * 
      * @param cc O novo estado condicional (LESS_THAN, EQUAL, GREATER_THAN).
      */
@@ -93,7 +92,7 @@ public class RegisterBank {
 
     /**
      * Recupera o Código de Condição atual, utilizado pelas instruções de salto 
-     * condicional (JEQ, JLT, JGT)[cite: 1, 2].
+     * condicional (JEQ, JLT, JGT).
      * 
      * @return O estado condicional vigente.
      */
@@ -110,8 +109,7 @@ public class RegisterBank {
     private void validateRegister(Register reg) {
         if (reg == Register.F) {
             throw new UnsupportedOperationException(
-                "O registrador de Ponto Flutuante (F) de 48 bits foi suprimido do escopo " +
-                "de simulação conforme os requisitos do roteiro."
+                "O registrador de Ponto Flutuante (F) não deve ser utilizado."
             );
         }
     }
