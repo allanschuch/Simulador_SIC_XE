@@ -124,6 +124,68 @@ public class Word24 {
     }
 
     /**
+     * Cria uma nova Word24 mantendo os bytes superiores intactos, mas substituindo o byte menos significativo.
+     * Essencial para a instrução LDCH (Load Character), que altera apenas o byte mais à direita.
+     * 
+     * @param lowByte O novo byte a ser inserido (será truncado para 8 bits).
+     * @return Uma nova Word24 atualizada.
+     */
+    public Word24 withLowByte(int lowByte) {
+        return new Word24(getHighByte(), getMiddleByte(), lowByte);
+    }
+
+    /**
+     * Realiza a operação lógica AND bit a bit com outra palavra de 24 bits.
+     * Utilizado pela instrução AND.
+     * 
+     * @param other O operando da memória.
+     * @return O resultado do AND lógico.
+     */
+    public Word24 bitwiseAnd(Word24 other) {
+        return new Word24(this.value & other.value);
+    }
+
+    /**
+     * Realiza a operação lógica OR bit a bit com outra palavra de 24 bits.
+     * Utilizado pela instrução OR.
+     * 
+     * @param other O operando da memória.
+     * @return O resultado do OR lógico.
+     */
+    public Word24 bitwiseOr(Word24 other) {
+        return new Word24(this.value | other.value);
+    }
+
+    /**
+     * Realiza um deslocamento circular à esquerda (Left Circular Shift) em um espaço estrito de 24 bits.
+     * Utilizado pela instrução SHIFTL.
+     * 
+     * @param n O número de bits a deslocar.
+     * @return O valor deslocado circularmente.
+     */
+    public Word24 shiftLeftCircular(int n) {
+        int nMod = n % 24; // Previne deslocamentos maiores que a própria palavra
+        // Desloca para a esquerda e reinsere os bits que "caíram" pela esquerda na base à direita
+        int shifted = ((this.value << nMod) | (this.value >>> (24 - nMod))) & MAX_MASK;
+        return new Word24(shifted);
+    }
+
+    /**
+     * Realiza um deslocamento aritmético à direita (Right Shift).
+     * As posições vazias à esquerda são preenchidas com o bit de sinal original.
+     * Utilizado pela instrução SHIFTR.
+     * 
+     * @param n O número de bits a deslocar.
+     * @return O valor deslocado com sinal estendido.
+     */
+    public Word24 shiftRightArithmetic(int n) {
+        // Ao converter para signed, o Java (que usa 32 bits) preenche o topo corretamente.
+        // O operador aritmético '>>' mantém o sinal durante o deslocamento.
+        int shifted = toIntSigned() >> n;
+        return new Word24(shifted); // O construtor trunca de volta para 24 bits de forma segura
+    }
+
+    /**
      * Retorna a representação da palavra em Hexadecimal, padronizada rigorosamente com 6 dígitos.
      * Fundamental para a Interface Gráfica, logs e depuração visual.
      *
