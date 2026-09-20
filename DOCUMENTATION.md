@@ -23,6 +23,8 @@ O sistema implementa o padrão MVC. A Máquina Virtual (Modelo) expõe o estado 
 * **4. Pacote `execution`: Execução e Endereçamento**
   * 4.1. Classe `TargetAddressCalculator`
   * 4.2. Classe `Executor`
+* **5. Pacote `machine`: Fachada e Controle da Máquina**
+  * 5.1. Classe `SICXEMachine`
 
 ---
 
@@ -120,3 +122,17 @@ Representa a Unidade Lógica, Aritmética e de Execução (ALU). Processa o DTO 
 *   **Deslocamento em Registradores (Shift):** Para as instruções `SHIFTL` e `SHIFTR`, o executor converte o identificador de r2 (armazenado como `n-1`) de volta para o número real de saltos `n` antes de invocar a translação de bits.
 *   **Controle de Fluxo e Subrotinas:** A classe altera o fluxo de execução manipulando diretamente o registrador PC. Comparações (`COMP`, `COMPR`) fixam o novo estado no `ConditionCode`. Saltos condicionais (`JEQ`, `JLT`, `JGT`) avaliam este código para deferir ou ignorar o salto. Subrotinas (`JSUB`) registram o estado atual do PC no registrador de ligação (`L`) antes de executar o salto, permitindo a retomada exata na instrução de retorno (`RSUB`). 
 
+## 5. Pacote `machine`: Fachada e Controle da Máquina
+
+Este pacote atua como o ponto central de integração do simulador, estruturando o Modelo (Model) no padrão arquitetural MVC e isolando os componentes internos das interações de interface.
+
+### 5.1. Classe `SICXEMachine`
+Encapsula as instâncias físicas e lógicas da arquitetura SIC/XE, fornecendo uma API de controle unificada para a coordenação do ciclo de instrução.
+
+*   **Inicialização Integrada:** O construtor centraliza a instanciação da memória principal (`Memory`), do banco de registradores (`RegisterBank`), do decodificador (`InstructionDecoder`), do calculador de endereços (`TargetAddressCalculator`) e da unidade aritmética/lógica (`Executor`).
+*   **Ciclo de Execução (`step()`):** Implementa o fluxo clássico de pipeline em um método sequencial:
+    *   **Busca e Decodificação:** Lê o endereço armazenado no registrador PC e aciona o decodificador para extrair e tipar a instrução corrente.
+    *   **Avanço Antecipado do PC:** O registrador PC é incrementado imediatamente após a decodificação, somando-se o formato da instrução (tamanho em bytes) ao valor atual. Esta atualização pré-execução é um requisito da arquitetura para viabilizar o cálculo do endereçamento PC-relativo (que usa o PC da próxima instrução como base) e para garantir o armazenamento correto do endereço de retorno em chamadas de subrotinas (`JSUB`).
+    *   **Endereçamento e Execução:** Invoca o cálculo do Endereço Efetivo (TA) com as flags extraídas e despacha o pacote de dados para a unidade de execução aplicar a alteração de estado.
+*   **Restabelecimento de Estado (`reset()`):** Zera toda a alocação da memória principal e redefine os registradores operacionais para zero, limpando também o Código de Condição (CC).
+*   **Exposição de Hardware:** Os métodos `getMemory()` e `getRegisters()` fornecem acesso direto aos componentes. Essa abertura é necessária para que Controladores externos inspecionem o estado atual da máquina e atualizem a Interface Gráfica, mantendo a responsabilidade de mutação restrita à própria classe `SICXEMachine`.
