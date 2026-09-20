@@ -52,6 +52,12 @@ public class Executor {
             case LDB: executeLoad(Register.B, inst, targetAddress); break;
             case LDS: executeLoad(Register.S, inst, targetAddress); break;
             case LDT: executeLoad(Register.T, inst, targetAddress); break;
+            case LDCH:
+                // LDCH afeta apenas o byte mais à direita do Acumulador.
+                int charToLoad = memory.readByte(targetAddress);
+                Word24 currentA = registers.get(Register.A);
+                registers.set(Register.A, currentA.withLowByte(charToLoad));
+                break;
             
             // ==========================================
             // 2. INSTRUÇÕES DE STORE (Armazenamento)
@@ -62,9 +68,14 @@ public class Executor {
             case STB: executeStore(Register.B, targetAddress); break;
             case STS: executeStore(Register.S, targetAddress); break;
             case STT: executeStore(Register.T, targetAddress); break;
+            case STCH:
+                // STCH grava apenas o byte mais à direita do Acumulador na memória[cite: 3].
+                int charToStore = registers.get(Register.A).getLowByte();
+                memory.writeByte(targetAddress, charToStore);
+                break;
 
             // ==========================================
-            // 3. ARITMÉTICA COM MEMÓRIA (Formato 3 e 4)
+            // 3. ARITMÉTICA E LÓGICA COM MEMÓRIA (Formato 3 e 4)
             // ==========================================
             case ADD: 
             case SUB: 
@@ -72,9 +83,13 @@ public class Executor {
             case DIV:
                 executeMemoryArithmetic(op, inst, targetAddress); 
                 break;
+            case AND:
+            case OR:
+                executeBitwiseLogic(op, inst, targetAddress);
+                break;
 
             // ==========================================
-            // 4. INSTRUÇÕES DE FORMATO 2 (Apenas Registradores)
+            // 4. INSTRUÇÕES DE FORMATO 2 E REGISTRADORES
             // ==========================================
             case ADDR:
             case SUBR:
@@ -88,6 +103,10 @@ public class Executor {
             case RMO:
                 registers.set(inst.getR2(), registers.get(inst.getR1()));
                 break;
+            case SHIFTL:
+            case SHIFTR:
+                executeShift(op, inst.getR1(), inst.getR2());
+                break;
 
             // ==========================================
             // 5. FLUXO DE CONTROLE E COMPARAÇÃO
@@ -97,6 +116,12 @@ public class Executor {
                 break;
             case COMPR:
                 executeRegisterCompare(inst.getR1(), inst.getR2());
+                break;
+            case TIX:
+                executeTix(inst, targetAddress);
+                break;
+            case TIXR:
+                executeTixr(inst.getR1());
                 break;
             case J:
                 registers.setPC(targetAddress);
@@ -118,20 +143,7 @@ public class Executor {
                 registers.set(Register.PC, registers.get(Register.L)); // Restaura o PC a partir do L
                 break;
 
-            // ==========================================
-            // INSTRUÇÕES PENDENTES (Próxima Iteração)
-            // ==========================================
-            case LDCH:
-            case STCH:
-            case AND:
-            case OR:
-            case TIX:
-            case TIXR:
-            case SHIFTL:
-            case SHIFTR:
-                throw new UnsupportedOperationException("Instrução mapeada, mas ainda não implementada no Executor: " + op);
-                
-            default:
+           default:
                 throw new IllegalArgumentException("Opcode não suportado para execução: " + op);
         }
     }
@@ -187,6 +199,29 @@ public class Executor {
     }
 
     /**
+     * Aplica operações lógicas AND / OR entre o Acumulador e a memória.
+     */
+    private void executeBitwiseLogic(Opcode op, DecodedInstruction inst, int targetAddress) {
+        Word24 valA = registers.get(Register.A);
+        Word24 operand = fetchOperand(inst, targetAddress);
+        
+        Word24 result = (op == Opcode.AND) ? valA.bitwiseAnd(operand) : valA.bitwiseOr(operand);
+        registers.set(Register.A, result);
+    }
+
+    /**
+     * Executa deslocamentos de bits. 
+     * Pela especificação, o número de bits (n) é guardado em formato n-1 no lugar do registrador r2.
+     */
+    private void executeShift(Opcode op, Register r1, Register r2) {
+        int n = r2.getCode() + 1; // Extrai (n - 1) do r2 e converte para n real
+        Word24 val1 = registers.get(r1);
+        
+        Word24 result = (op == Opcode.SHIFTL) ? val1.shiftLeftCircular(n) : val1.shiftRightArithmetic(n);
+        registers.set(r1, result);
+    }
+
+    /**
      * Compara o valor do Acumulador (A) com um valor da memória (ou imediato) 
      * e atualiza o Código de Condição (CC).
      */
@@ -203,6 +238,30 @@ public class Executor {
         Word24 val1 = registers.get(r1);
         Word24 val2 = registers.get(r2);
         updateConditionCode(val1, val2);
+    }
+
+    /**
+     * Executa a instrução TIX: Incrementa o Registrador de Índice (X) em 1 e 
+     * o compara contra um valor em memória, atualizando o Código de Condição.
+     */
+    private void executeTix(DecodedInstruction inst, int targetAddress) {
+        Word24 x = registers.get(Register.X).add(new Word24(1));
+        registers.set(Register.X, x);
+        
+        Word24 operand = fetchOperand(inst, targetAddress);
+        updateConditionCode(x, operand);
+    }
+
+    /**
+     * Executa a instrução TIXR: Incrementa o Registrador de Índice (X) em 1 e 
+     * o compara contra o registrador r1, atualizando o Código de Condição.
+     */
+    private void executeTixr(Register r1) {
+        Word24 x = registers.get(Register.X).add(new Word24(1));
+        registers.set(Register.X, x);
+        
+        Word24 operand = registers.get(r1);
+        updateConditionCode(x, operand);
     }
 
     /**

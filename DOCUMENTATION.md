@@ -20,6 +20,9 @@ O sistema implementa o padrão MVC. A Máquina Virtual (Modelo) expõe o estado 
 * **3. Pacote `decoder`: Decodificação de Instruções**
   * 3.1. Classe `DecodedInstruction`
   * 3.2. Classe `InstructionDecoder`
+* **4. Pacote `execution`: Execução e Endereçamento**
+  * 4.1. Classe `TargetAddressCalculator`
+  * 4.2. Classe `Executor`
 
 ---
 
@@ -95,3 +98,25 @@ Responsável pela leitura crua da memória e extração estruturada das flags l�
 *   **Concatenação de Endereços/Deslocamentos:**
     *   **Formato 4:** Ativado quando a flag `e` é verdadeira. O decodificador consome 4 bytes da memória e concatena os 4 bits inferiores do segundo byte com os 16 bits dos bytes três e quatro. Este processo utiliza deslocamentos lógicos (`<<`) e operadores OR (`|`), resultando no endereço absoluto de 20 bits.
     *   **Formato 3:** Ativado quando a flag `e` é falsa. O decodificador consome 3 bytes e forma o deslocamento relativo de 12 bits combinando o nibble inferior do byte dois e a totalidade do byte três.
+
+## 4. Pacote `execution`: Execução e Endereçamento
+
+Este pacote é responsável pela resolução final de ponteiros em memória e pela aplicação das mutações de estado na CPU (registradores e memória principal) de acordo com a semântica de cada instrução.
+
+### 4.1. Classe `TargetAddressCalculator`
+Isola a lógica de cálculo do Endereço Efetivo (Target Address - TA) exclusivo para as instruções dos Formatos 3 e 4. 
+
+*   **Resolução de Deslocamento:** Avalia as flags de base e contador de programa. Se `p=1` (PC-relativo), soma o valor de deslocamento com sinal estendido ao registrador PC. Se `b=1` (Base-relativo), soma o deslocamento sem sinal ao registrador B. Se ambas forem nulas, assume o valor lido como endereço absoluto de 20 bits. A ativação simultânea das flags `p` e `b` lança uma `IllegalArgumentException`.
+*   **Indexação:** Caso a flag `x` esteja ativa, adiciona o valor contido no registrador `X` ao endereço computado parcial.
+*   **Truncamento Físico:** Aplica a máscara `& 0xFFFFFF` ao final do cálculo do TA para garantir que eventuais retrocessos relativos ao PC não gerem endereços negativos que vazem para a base de 32 bits do inteiro Java, confinando o ponteiro aos limites arquiteturais.
+*   **Indireção:** Se o modo for indireto (`n=1, i=0`), o endereço computado é tratado como ponteiro primário. A classe acessa a memória, lê a palavra de 24 bits contida neste ponteiro e a define como o Endereço Efetivo final.
+
+### 4.2. Classe `Executor`
+Representa a Unidade Lógica, Aritmética e de Execução (ALU). Processa o DTO `DecodedInstruction` e executa as rotinas correspondentes, sem manipular operações de baixo nível de mascaramento de bits.
+
+*   **Busca de Operandos Dinâmica:** O método interno `fetchOperand()` interroga o modo de endereçamento. Para o modo Imediato (`n=0, i=1`), encapsula diretamente o TA computado em uma `Word24`. Para os demais casos, efetua a leitura da palavra correspondente na memória principal.
+*   **Movimentação e Manipulação de Bytes:** Executa transferências diretas de Load e Store em nível de palavra (`LDA`, `STA`). Nas instruções específicas de caractere (`LDCH`, `STCH`), utiliza os métodos de precisão isolada (`withLowByte()`, `getLowByte()`) para interagir restritamente com o último byte, preservando o restante da estrutura.
+*   **Aritmética e Tratamento de Complemento de 2:** Delega as operações matemáticas para o controle interno da classe `Word24`. A conversão nativa para `toIntSigned()` blinda a aritmética de 24 bits, assegurando o comportamento correto perante valores negativos pela JVM. Operações de `DIV` ou `DIVR` por zero acionam uma `ArithmeticException`.
+*   **Deslocamento em Registradores (Shift):** Para as instruções `SHIFTL` e `SHIFTR`, o executor converte o identificador de r2 (armazenado como `n-1`) de volta para o número real de saltos `n` antes de invocar a translação de bits.
+*   **Controle de Fluxo e Subrotinas:** A classe altera o fluxo de execução manipulando diretamente o registrador PC. Comparações (`COMP`, `COMPR`) fixam o novo estado no `ConditionCode`. Saltos condicionais (`JEQ`, `JLT`, `JGT`) avaliam este código para deferir ou ignorar o salto. Subrotinas (`JSUB`) registram o estado atual do PC no registrador de ligação (`L`) antes de executar o salto, permitindo a retomada exata na instrução de retorno (`RSUB`). 
+
