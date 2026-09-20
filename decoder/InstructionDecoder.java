@@ -114,6 +114,13 @@ public class InstructionDecoder {
             targetValue = ((byte2 & DISPLACEMENT_HIGH_NIBBLE_MASK) << 8) | byte3;
         }
 
+        // Retorna o DTO preenchido com todas as flags extraídas
+        return new DecodedInstruction(
+            opcode, format, mode, 
+            flagX, flagB, flagP, flagE, targetValue
+        );
+    }
+
     /**
      * Determina o modo de endereçamento baseado nas flags n e i.
      */
