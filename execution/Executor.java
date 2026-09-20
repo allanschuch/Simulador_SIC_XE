@@ -1,0 +1,188 @@
+package execution;
+
+import decoder.DecodedInstruction;
+import hardware.Memory;
+import hardware.RegisterBank;
+import types.AddressingMode;
+import types.Opcode;
+import types.Register;
+import types.Word24;
+
+/**
+ * A Unidade Lógica, Aritmética e de Execução da CPU SIC/XE.
+ * Responsável por aplicar as alterações de estado nos registradores e na memória
+ * de acordo com a semântica de cada Opcode.
+ * 
+ * Esta classe é desenhada para ser livre de manipulações de bits e cálculos
+ * de ponteiros, delegando essas tarefas para a Word24 e para o TargetAddressCalculator.
+ */
+public class Executor {
+
+    private final Memory memory;
+    private final RegisterBank registers;
+
+    /**
+     * Instancia o Executor com as dependências de hardware.
+     * 
+     * @param memory A memória principal do simulador.
+     * @param registers O banco de registradores da CPU.
+     */
+    public Executor(Memory memory, RegisterBank registers) {
+        this.memory = memory;
+        this.registers = registers;
+    }
+
+    /**
+     * Executa a instrução decodificada.
+     * 
+     * @param inst A instrução previamente decodificada.
+     * @param targetAddress O endereço efetivo (TA) calculado, se aplicável (Formatos 3 e 4).
+     */
+    public void execute(DecodedInstruction inst, int targetAddress) {
+        Opcode op = inst.getOpcode();
+
+        switch (op) {
+            // ==========================================
+            // 1. INSTRUÇÕES DE LOAD (Carregamento)
+            // ==========================================
+            case LDA: executeLoad(Register.A, inst, targetAddress); break;
+            case LDX: executeLoad(Register.X, inst, targetAddress); break;
+            case LDL: executeLoad(Register.L, inst, targetAddress); break;
+            case LDB: executeLoad(Register.B, inst, targetAddress); break;
+            case LDS: executeLoad(Register.S, inst, targetAddress); break;
+            case LDT: executeLoad(Register.T, inst, targetAddress); break;
+            
+            // ==========================================
+            // 2. INSTRUÇÕES DE STORE (Armazenamento)
+            // ==========================================
+            case STA: executeStore(Register.A, targetAddress); break;
+            case STX: executeStore(Register.X, targetAddress); break;
+            case STL: executeStore(Register.L, targetAddress); break;
+            case STB: executeStore(Register.B, targetAddress); break;
+            case STS: executeStore(Register.S, targetAddress); break;
+            case STT: executeStore(Register.T, targetAddress); break;
+
+            // ==========================================
+            // 3. ARITMÉTICA COM MEMÓRIA (Formato 3 e 4)
+            // ==========================================
+            case ADD: 
+            case SUB: 
+            case MUL: 
+            case DIV:
+                executeMemoryArithmetic(op, inst, targetAddress); 
+                break;
+
+            // ==========================================
+            // 4. INSTRUÇÕES DE FORMATO 2 (Apenas Registradores)
+            // ==========================================
+            case ADDR:
+            case SUBR:
+            case MULR:
+            case DIVR:
+                executeRegisterArithmetic(op, inst.getR1(), inst.getR2());
+                break;
+            case CLEAR:
+                registers.set(inst.getR1(), new Word24(0));
+                break;
+            case RMO:
+                registers.set(inst.getR2(), registers.get(inst.getR1()));
+                break;
+
+            // ==========================================
+            // INSTRUÇÕES PENDENTES (Próxima Iteração)
+            // ==========================================
+            case LDCH:
+            case STCH:
+            case COMP:
+            case COMPR:
+            case AND:
+            case OR:
+            case TIX:
+            case TIXR:
+            case SHIFTL:
+            case SHIFTR:
+            case J:
+            case JEQ:
+            case JGT:
+            case JLT:
+            case JSUB:
+            case RSUB:
+                throw new UnsupportedOperationException("Instrução mapeada, mas ainda não implementada no Executor: " + op);
+                
+            default:
+                // Mecanismo de segurança extra, embora o enum Opcode já filtre flutuantes e I/O.
+                throw new IllegalArgumentException("Opcode não suportado para execução: " + op);
+        }
+    }
+
+    /**
+     * Resolve a busca do operando analisando o Modo de Endereçamento.
+     * Se for Imediato (#c), o próprio targetAddress é o valor. Caso contrário, lê a memória.
+     */
+    private Word24 fetchOperand(DecodedInstruction inst, int targetAddress) {
+        if (inst.getAddressingMode() == AddressingMode.IMMEDIATE) {
+            return new Word24(targetAddress);
+        }
+        return memory.readWord(targetAddress);
+    }
+
+    /**
+     * Executa qualquer instrução de carregamento (LDA, LDX, etc).
+     */
+    private void executeLoad(Register reg, DecodedInstruction inst, int targetAddress) {
+        Word24 operand = fetchOperand(inst, targetAddress);
+        registers.set(reg, operand);
+    }
+
+    /**
+     * Executa qualquer instrução de armazenamento (STA, STX, etc).
+     * O modo Imediato não faz sentido lógico para Store na arquitetura SIC/XE.
+     */
+    private void executeStore(Register reg, int targetAddress) {
+        Word24 valueToStore = registers.get(reg);
+        memory.writeWord(targetAddress, valueToStore);
+    }
+
+    /**
+     * Executa operações aritméticas onde o operando 1 é o Acumulador (A) 
+     * e o operando 2 vem da Memória (ou é imediato).
+     */
+    private void executeMemoryArithmetic(Opcode op, DecodedInstruction inst, int targetAddress) {
+        Word24 valA = registers.get(Register.A);
+        Word24 operand = fetchOperand(inst, targetAddress);
+        Word24 result = computeArithmetic(op, valA, operand);
+        registers.set(Register.A, result);
+    }
+
+    /**
+     * Executa operações aritméticas exclusivamente entre dois registradores (Formato 2).
+     * O resultado é sempre armazenado no registrador 2 (r2).
+     */
+    private void executeRegisterArithmetic(Opcode op, Register r1, Register r2) {
+        Word24 val1 = registers.get(r1);
+        Word24 val2 = registers.get(r2);
+        Word24 result = computeArithmetic(op, val2, val1); // A instrução é r2 <- r2 (op) r1
+        registers.set(r2, result);
+    }
+
+    /**
+     * Centraliza a lógica matemática de 24 bits.
+     * Utiliza a conversão para inteiro com sinal (complemento de 2) da Word24 para garantir 
+     * que a JVM do Java calcule valores negativos corretamente.
+     */
+    private Word24 computeArithmetic(Opcode op, Word24 dest, Word24 src) {
+        int vDest = dest.toIntSigned();
+        int vSrc = src.toIntSigned();
+        
+        return switch (op) {
+            case ADD, ADDR -> new Word24(vDest + vSrc);
+            case SUB, SUBR -> new Word24(vDest - vSrc);
+            case MUL, MULR -> new Word24(vDest * vSrc);
+            case DIV, DIVR -> {
+                if (vSrc == 0) throw new ArithmeticException("Divisão por zero detectada na CPU.");
+                yield new Word24(vDest / vSrc);
+            }
+            default -> throw new IllegalArgumentException("Operação aritmética inválida: " + op);
+        };
+    }
+}
