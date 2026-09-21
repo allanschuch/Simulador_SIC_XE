@@ -10,7 +10,8 @@ Para compilar e executar este simulador, a sua máquina deve possuir:
 ## Instalação Rápida (Scripts Inteligentes)
 Para facilitar a configuração do ambiente, utilize os scripts fornecidos na pasta `setup-scripts`. Eles verificam automaticamente se as ferramentas já estão instaladas; caso contrário, realizam o download e a configuração no sistema operacional.
 
-**No Windows (Executar como Administrador no PowerShell ou CMD):**
+**No Windows:**
+Abra um terminal (PowerShell ou CMD) **como Administrador**, navegue até a raiz do projeto e execute o script:
 ```cmd
 .\setup-scripts\setup.bat
 ```
