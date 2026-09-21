@@ -1,4 +1,4 @@
-package types;
+package src.model.types;
 
 /**
  * Enumeração dos registradores da arquitetura SIC/XE.

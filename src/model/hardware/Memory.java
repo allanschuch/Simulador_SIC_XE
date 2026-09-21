@@ -1,6 +1,6 @@
-package hardware;
+package src.model.hardware;
 
-import types.Word24;
+import src.model.types.Word24;
 
 /**
  * Representa a Memória Principal da máquina hipotética SIC/XE.

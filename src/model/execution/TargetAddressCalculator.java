@@ -1,11 +1,11 @@
-package execution;
+package src.model.execution;
 
-import decoder.DecodedInstruction;
-import hardware.Memory;
-import hardware.RegisterBank;
-import types.AddressingMode;
-import types.Register;
-import types.Word24;
+import src.model.decoder.DecodedInstruction;
+import src.model.hardware.Memory;
+import src.model.hardware.RegisterBank;
+import src.model.types.AddressingMode;
+import src.model.types.Register;
+import src.model.types.Word24;
 
 /**
  * Utilitário responsável por calcular o Endereço Efetivo (Target Address - TA)

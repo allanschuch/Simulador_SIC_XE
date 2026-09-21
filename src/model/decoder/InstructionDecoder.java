@@ -1,9 +1,9 @@
-package decoder;
+package src.model.decoder;
 
-import hardware.Memory;
-import types.AddressingMode;
-import types.Opcode;
-import types.Register;
+import src.model.hardware.Memory;
+import src.model.types.AddressingMode;
+import src.model.types.Opcode;
+import src.model.types.Register;
 
 /**
  * Decodificador da arquitetura SIC/XE.

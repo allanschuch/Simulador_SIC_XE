@@ -1,13 +1,13 @@
-package execution;
+package src.model.execution;
 
-import decoder.DecodedInstruction;
-import hardware.Memory;
-import hardware.RegisterBank;
-import types.AddressingMode;
-import types.ConditionCode;
-import types.Opcode;
-import types.Register;
-import types.Word24;
+import src.model.decoder.DecodedInstruction;
+import src.model.hardware.Memory;
+import src.model.hardware.RegisterBank;
+import src.model.types.AddressingMode;
+import src.model.types.ConditionCode;
+import src.model.types.Opcode;
+import src.model.types.Register;
+import src.model.types.Word24;
 
 /**
  * A Unidade Lógica, Aritmética e de Execução da CPU SIC/XE.
