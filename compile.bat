@@ -38,7 +38,7 @@ if %BUILD_STATUS% EQU 0 (
         
         :: PADRAO: Se nenhuma classe for informada, executa o teste
         if "!CLASS_NAME!"=="" (
-            set CLASS_NAME=tests.Test
+            set CLASS_NAME=src.tests.Test
             echo [INFO] Nenhuma classe informada. Executando o padrao: !CLASS_NAME!
         )
         
