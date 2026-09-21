@@ -120,6 +120,40 @@ public class MachineController {
     }
 
     /**
+     * Pseudo-carregador temporário para testes.
+     * Recebe uma string contendo código hexadecimal bruto, limpa formatações
+     * (espaços, quebras de linha) e injeta byte a byte na memória a partir do endereço 0x0000.
+     * 
+     * @param hexCode Código de máquina em formato hexadecimal (ex: "B4 10 01 00").
+     */
+    public void loadHexCode(String hexCode) {
+        pause(); // Para qualquer execução em andamento
+        
+        // Remove tudo que não for caractere hexadecimal (permite que o usuário cole com espaços ou quebras de linha)
+        String cleanHex = hexCode.replaceAll("[^0-9A-Fa-f]", "");
+        
+        if (cleanHex.length() % 2 != 0) {
+            notifyError("O código hexadecimal deve conter um número par de caracteres (bytes completos).");
+            return;
+        }
+
+        try {
+            // Zera a memória e os registradores antes de carregar o novo programa
+            machine.reset(); 
+
+            // Converte pares de caracteres em bytes e injeta na memória
+            for (int i = 0; i < cleanHex.length(); i += 2) {
+                int byteValue = Integer.parseInt(cleanHex.substring(i, i + 2), 16);
+                machine.getMemory().writeByte(i / 2, byteValue);
+            }
+            
+            notifyStateChanged();
+        } catch (Exception e) {
+            notifyError("Falha ao carregar código na memória: " + e.getMessage());
+        }
+    }
+
+    /**
      * Método auxiliar interno para disparar notificações de mudança de estado,
      * caso um ouvinte tenha sido registrado.
      */
