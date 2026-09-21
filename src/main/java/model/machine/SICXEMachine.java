@@ -8,6 +8,7 @@ import model.hardware.Memory;
 import model.hardware.RegisterBank;
 import model.types.Register;
 import model.types.Word24;
+import model.types.ConditionCode;
 
 /**
  * Fachada principal do simulador SIC/XE (O "Model" do padrão MVC).
@@ -78,7 +79,7 @@ public class SICXEMachine {
                 registers.set(reg, new Word24(0));
             }
         }
-        registers.setConditionCode(model.ConditionCode.NONE);
+        registers.setConditionCode(ConditionCode.NONE);
         
         // Zera a memória
         for (int i = 0; i < Memory.MAX_MEMORY_SIZE; i++) {
