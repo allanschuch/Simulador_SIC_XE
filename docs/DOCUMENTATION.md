@@ -30,6 +30,9 @@ O sistema implementa o padrão MVC. A Máquina Virtual (Modelo) expõe o estado 
   * **1. Pacote `controller`: Orquestração e Eventos**
     * 2.1.1. Interface `MachineStateListener`
     * 2.1.2. Classe `MachineController`
+* **MÓDULO 3: View**
+  * **7. Pacote `view`: Interface Gráfica**
+    * 7.1. Classe `SICXEView`
 
 ---
 
@@ -169,3 +172,18 @@ Encapsula as interações com a `SICXEMachine` e gerencia o controle de concorr�
 *   **Avanço Único (`step`):** Executa o ciclo lógico da máquina protegido por um bloco `try-catch`. Em caso de exceção de hardware, o controlador executa um `pause()` preventivo e propaga o erro formatado — incluindo o estado atual do registrador PC — através do *listener*.
 *   **Reset Lógico (`reset`):** Aplica a reinicialização restrita aos registradores operacionais (A, X, L, B, S, T) e ao PC. O `reset` do Controller não apaga a memória, preservando intencionalmente o último programa (código objeto) carregado para novas execuções.
 *   **Carregador Temporário (`loadHexCode`):** Utilitário embutido para testes de execução. Recebe uma string contendo código hexadecimal, sanitiza a entrada removendo espaços e quebras de linha, valida a paridade de caracteres e escreve as instruções byte a byte na memória a partir do endereço `0x0000`.
+
+## MÓDULO 3: View
+
+---
+
+## 7. Pacote `view`: Interface Gráfica
+
+Este pacote implementa a camada visual do padrão MVC utilizando Java Swing, isolando os componentes gráficos da lógica de simulação.
+
+### 7.1. Classe `SICXEView`
+Atua como a interface principal do simulador, assinando os eventos do Controller (via `MachineStateListener`) para renderizar o estado do Model de forma reativa e segura.
+
+*   **Thread Safety (`invokeLater`):** Como o Controller executa a simulação em uma Thread separada (background), todas as atualizações visuais disparadas pelos eventos de estado e de erro são repassadas ao `SwingUtilities.invokeLater`. Isso garante que a renderização ocorra estritamente na *Event Dispatch Thread* (EDT) do Swing, prevenindo anomalias e travamentos na interface.
+*   **Rastreamento do PC:** Durante a atualização de estado (`onMachineStateChanged`), a View extrai o valor atual do Program Counter (PC) e força a barra de rolagem da tabela de memória a focar e selecionar a linha correspondente, permitindo o acompanhamento visual da execução.
+*   **Delegação de Controles:** Os botões (Step, Run, Pause, Reset, Load) delegam a ação imediatamente aos métodos correspondentes do Controller. A interface não possui lógicas de negócio, atuando apenas como acionadora.
