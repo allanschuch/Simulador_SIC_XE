@@ -1,13 +1,13 @@
-package src.model.machine;
+package model.machine;
 
-import src.model.decoder.DecodedInstruction;
-import src.model.decoder.InstructionDecoder;
-import src.model.execution.Executor;
-import src.model.execution.TargetAddressCalculator;
-import src.model.hardware.Memory;
-import src.model.hardware.RegisterBank;
-import src.model.types.Register;
-import src.model.types.Word24;
+import model.decoder.DecodedInstruction;
+import model.decoder.InstructionDecoder;
+import model.execution.Executor;
+import model.execution.TargetAddressCalculator;
+import model.hardware.Memory;
+import model.hardware.RegisterBank;
+import model.types.Register;
+import model.types.Word24;
 
 /**
  * Fachada principal do simulador SIC/XE (O "Model" do padrão MVC).
@@ -78,7 +78,7 @@ public class SICXEMachine {
                 registers.set(reg, new Word24(0));
             }
         }
-        registers.setConditionCode(src.model.types.ConditionCode.NONE);
+        registers.setConditionCode(model.ConditionCode.NONE);
         
         // Zera a memória
         for (int i = 0; i < Memory.MAX_MEMORY_SIZE; i++) {

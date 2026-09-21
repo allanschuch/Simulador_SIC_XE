@@ -1,4 +1,4 @@
-package src.model.types;
+package model.types;
 
 /**
  * Enumeração das instruções suportadas pelo simulador SIC/XE.

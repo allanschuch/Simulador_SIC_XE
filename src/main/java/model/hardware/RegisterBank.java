@@ -1,10 +1,10 @@
-package src.model.hardware;
+package model.hardware;
 
 import java.util.EnumMap;
 
-import src.model.types.ConditionCode;
-import src.model.types.Register;
-import src.model.types.Word24;
+import model.types.ConditionCode;
+import model.types.Register;
+import model.types.Word24;
 
 /**
  * Representa o Banco de Registradores do processador SIC/XE.

@@ -1,0 +1,19 @@
+# Ignorar a pasta de compilação do Maven (onde ficam os .class e .jar gerados)
+target/
+
+# Ignorar arquivos de configuração de IDEs (opcional, mas altamente recomendado)
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Ignorar arquivos do sistema operacional
+Thumbs.db
+.DS_Store

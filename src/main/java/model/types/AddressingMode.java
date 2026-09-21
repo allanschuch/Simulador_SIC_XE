@@ -1,4 +1,4 @@
-package src.model.types;
+package model.types;
 
 /**
  * Representa os Modos de Endereçamento da arquitetura SIC/XE

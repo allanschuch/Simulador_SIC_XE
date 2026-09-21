@@ -1,9 +1,9 @@
-package src.tests;
 
-import src.model.machine.SICXEMachine;
-import src.model.hardware.Memory;
-import src.model.types.Register;
-import src.model.types.ConditionCode;
+
+import model.machine.SICXEMachine;
+import model.hardware.Memory;
+import model.types.Register;
+import model.types.ConditionCode;
 
 /**
  * Teste avançado do simulador SIC/XE.

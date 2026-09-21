@@ -1,9 +1,9 @@
-package src.model.decoder;
+package model.decoder;
 
-import src.model.types.AddressingMode;
-import src.model.types.Opcode;
-import src.model.types.Register;
-import src.model.types.Word24;
+import model.types.AddressingMode;
+import model.types.Opcode;
+import model.types.Register;
+import model.types.Word24;
 
 /**
  * Contêiner de Dados (DTO) que representa uma instrução completamente decodificada.

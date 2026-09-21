@@ -1,4 +1,4 @@
-package src.model.types;
+package model.types;
 
 /**
  * Encapsula uma palavra de 24 bits da arquitetura SIC/XE.

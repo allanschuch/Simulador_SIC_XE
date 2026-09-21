@@ -1,4 +1,4 @@
-package src.model.types;
+package model.types;
 
 /**
  * Representa os Códigos de Condição (Condition Codes - CC) utilizados pela
