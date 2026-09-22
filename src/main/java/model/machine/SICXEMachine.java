@@ -24,6 +24,9 @@ public class SICXEMachine {
     private final TargetAddressCalculator taCalculator;
     private final Executor executor;
 
+    // Atributo para armazenar a última instrução decodificada, útil para a View exibir detalhes da execução.
+    private DecodedInstruction lastExecutedInstruction = null;
+
     /**
      * Construtor padrão da máquina.
      * Inicializa o hardware (Memória e Banco de Registradores) e as unidades lógicas.
@@ -44,6 +47,9 @@ public class SICXEMachine {
         // 1. FETCH (Busca e Decodificação preliminar)
         int currentPC = registers.getPC();
         DecodedInstruction inst = decoder.decode(memory, currentPC);
+
+        // Salva onde a instrução foi encontrada para o renderizador de cores da interface gráfica.
+        inst.setFetchAddress(currentPC);
         
         // 2. AVANÇO DO PC
         // O SIC/XE avança o PC logo após a busca. Isso é importante por dois motivos:
@@ -62,10 +68,16 @@ public class SICXEMachine {
         // 3. CÁLCULO DE ENDEREÇO EFETIVO (TA)
         // O decodificador preencheu as flags, e o TA Calculator resolve o endereçamento.
         int targetAddress = taCalculator.calculateTargetAddress(inst, registers, memory);
+
+        // Salva o TA calculado na instrução para visualização no "Instruction Details" da interface gráfica.
+        inst.setCalculatedTargetAddress(targetAddress);
         
         // 4. EXECUÇÃO
         // Entrega a instrução e o endereço final pronto para a Unidade de Execução.
         executor.execute(inst, targetAddress);
+
+        // Atualiza a última instrução executada para que a View possa exibir detalhes da execução.
+        this.lastExecutedInstruction = inst;
     }
 
     /**
@@ -85,6 +97,8 @@ public class SICXEMachine {
         for (int i = 0; i < Memory.MAX_MEMORY_SIZE; i++) {
             memory.writeByte(i, 0);
         }
+        
+        this.lastExecutedInstruction = null;
     }
 
     /**
@@ -105,5 +119,9 @@ public class SICXEMachine {
      */
     public RegisterBank getRegisters() {
         return registers;
+    }
+
+    public DecodedInstruction getLastExecutedInstruction() { 
+        return lastExecutedInstruction; 
     }
 }

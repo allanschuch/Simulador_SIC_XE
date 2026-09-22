@@ -28,6 +28,10 @@ public class DecodedInstruction {
     // Valor extraído: pode ser o displacement de 12 bits (F3) ou address de 20 bits (F4)
     private final int displacementOrAddress;
 
+    // Atributos usados na view para exibição de detalhes da instrução na interface visual
+    private int fetchAddress;
+    private Integer calculatedTargetAddress = null;
+
     /**
      * Construtor para instruções de Formato 2.
      * 
@@ -100,4 +104,11 @@ public class DecodedInstruction {
     public Word24 getSignedDisplacement() {
         return Word24.fromSigned12Bit(displacementOrAddress);
     }
+
+    // Métodos usados pela view para exibição de detalhes da instrução na interface visual
+    public int getFetchAddress() { return fetchAddress; }
+    public void setFetchAddress(int fetchAddress) { this.fetchAddress = fetchAddress; }
+
+    public Integer getCalculatedTargetAddress() { return calculatedTargetAddress; }
+    public void setCalculatedTargetAddress(Integer ta) { this.calculatedTargetAddress = ta; }
 }
