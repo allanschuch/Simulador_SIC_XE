@@ -126,7 +126,7 @@ public class SICXEView extends JFrame implements MachineStateListener {
         JScrollPane scrollPane = new JScrollPane(textArea);
 
         int result = JOptionPane.showConfirmDialog(
-                this, scrollPane, "Cole o código objeto (Hexadecimal)",
+                this, scrollPane, "Cole o código de máquina (Hexadecimal)",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE
         );
 
